@@ -41,7 +41,7 @@ Watch as we intentionally deploy "bad" code to production and observe how the SR
 
 The solution uses Azure SRE Agent with three specialized sub-agents working together:
 
-![Architecture Diagram](https://raw.githubusercontent.com/meetshamir/dotnetday/main/docs/images/architecture-diagram.png)
+![Architecture Diagram](https://raw.githubusercontent.com/microsoft/sre-agent/main/samples/proactive-reliability/docs/images/architecture-diagram.png)
 
 ### Components
 
@@ -57,18 +57,56 @@ The solution uses Azure SRE Agent with three specialized sub-agents working toge
 
 **External Integrations:**
 - GitHub (issue creation, semantic code search, Copilot assignment)
-- Microsoft Teams (incident notifications)
+- Microsoft Teams (deployment summaries)
 - Outlook (summary reports)
+
+## What the SRE Agent Does
+
+When a deployment occurs, the SRE Agent autonomously performs the following actions:
+
+### 1. Health Check (DeploymentHealthCheck Sub-Agent)
+
+When a slot swap alert fires, the agent:
+- Queries App Insights for current response times
+- Retrieves the baseline from the Knowledge Store
+- Compares current performance against baseline
+- **If degradation > 20%**: Executes rollback and creates GitHub issue
+- **If healthy**: Posts confirmation to Teams
+
+**Healthy Deployment - No Action Needed:**
+
+![Teams Post - Healthy](https://raw.githubusercontent.com/microsoft/sre-agent/main/samples/proactive-reliability/docs/images/outputs/teams-post-healthy.png)
+
+*The agent confirms the deployment is healthy — response time (22ms) is 80% faster than baseline (116ms).*
+
+**Degraded Deployment - Automatic Rollback:**
+
+![Teams Post - Rollback](https://raw.githubusercontent.com/microsoft/sre-agent/main/samples/proactive-reliability/docs/images/outputs/teams-post-rollback.png)
+
+*The agent detects +332% latency regression (505ms vs 116ms baseline), executes a slot swap to rollback, and creates [GitHub Issue #5](https://github.com/meetshamir/dotnetday/issues/5).*
+
+### 2. Daily Summary (DeploymentReporter Sub-Agent)
+
+Every 24 hours, the reporter agent:
+- Reads all Teams deployment posts from the last 24 hours
+- Aggregates deployment metrics
+- Sends an executive summary email
+
+**Email Report:**
+
+![Email Report](https://raw.githubusercontent.com/microsoft/sre-agent/main/samples/proactive-reliability/docs/images/outputs/email-report.png)
+
+*The daily report shows 9 deployments, 6 healthy, 3 rollbacks, and 3 GitHub issues created — complete with response time details and issue links.*
 
 ## Demo Flow
 
-**[View Step-by-Step Instructions →](https://github.com/meetshamir/dotnetday#demo-flow)**
+**[View Step-by-Step Instructions →](https://github.com/microsoft/sre-agent/tree/main/samples/proactive-reliability#demo-flow)**
 
 | Step | Action |
 |------|--------|
-| **Step 1** | [Deploy Infrastructure + Applications](https://github.com/meetshamir/dotnetday#step-1-setup-demo-environment) |
-| **Step 2** | [Create Sub-Agents, Triggers & Schedules](https://github.com/meetshamir/dotnetday#step-2-configure-azure-sre-agent) |
-| **Step 3** | [Swap bad code, watch agent remediate](https://github.com/meetshamir/dotnetday#step-3-run-the-demo) |
+| **Step 1** | [Deploy Infrastructure + Applications](https://github.com/microsoft/sre-agent/tree/main/samples/proactive-reliability#step-1-setup-demo-environment) |
+| **Step 2** | [Create Sub-Agents, Triggers & Schedules](https://github.com/microsoft/sre-agent/tree/main/samples/proactive-reliability#step-2-configure-azure-sre-agent) |
+| **Step 3** | [Swap bad code, watch agent remediate](https://github.com/microsoft/sre-agent/tree/main/samples/proactive-reliability#step-3-run-the-demo) |
 
 ## Setting Up the Demo
 
@@ -92,7 +130,7 @@ This script will:
 3. Build and deploy **healthy** code to production
 4. Build and deploy **problematic** code to staging
 
-**[Full Setup Instructions →](https://github.com/meetshamir/dotnetday#step-1-setup-demo-environment)**
+**[Full Setup Instructions →](https://github.com/microsoft/sre-agent/tree/main/samples/proactive-reliability#step-1-setup-demo-environment)**
 
 ### Step 2: Configure Azure SRE Agent
 
@@ -107,19 +145,19 @@ Navigate to Azure SRE Agents Portal Sub Agent builder tab and create three sub-a
 #### Creating Each Sub-Agent
 
 **AvgResponseTime + Baseline Task:**
-![AvgResponseTime Sub-Agent Creation](https://github.com/meetshamir/dotnetday/blob/main/docs/screenshots/sre-agent/baseline.gif?raw=true)
+![AvgResponseTime Sub-Agent Creation](https://github.com/microsoft/sre-agent/blob/main/samples/proactive-reliability/docs/screenshots/sre-agent/baseline.gif?raw=true)
 
-**[Detailed Instructions →](https://github.com/meetshamir/dotnetday#creating-avgresponsetime-sub-agent--baselinetask-trigger)**
+**[Detailed Instructions →](https://github.com/microsoft/sre-agent/tree/main/samples/proactive-reliability#creating-avgresponsetime-sub-agent--baselinetask-trigger)**
 
 **DeploymentHealthCheck + Swap Alert:**
-![DeploymentHealthCheck Sub-Agent Creation](https://github.com/meetshamir/dotnetday/blob/main/docs/screenshots/sre-agent/healthcheck.gif?raw=true)
+![DeploymentHealthCheck Sub-Agent Creation](https://github.com/microsoft/sre-agent/blob/main/samples/proactive-reliability/docs/screenshots/sre-agent/healthcheck.gif?raw=true)
 
-**[Detailed Instructions →](https://github.com/meetshamir/dotnetday#creating-deploymenthealthcheck-sub-agent--swap-alert-trigger)**
+**[Detailed Instructions →](https://github.com/microsoft/sre-agent/tree/main/samples/proactive-reliability#creating-deploymenthealthcheck-sub-agent--swap-alert-trigger)**
 
 **DeploymentReporter + Reporter Task:**
-![DeploymentReporter Sub-Agent Creation](https://github.com/meetshamir/dotnetday/blob/main/docs/screenshots/sre-agent/reporter.gif?raw=true)
+![DeploymentReporter Sub-Agent Creation](https://github.com/microsoft/sre-agent/blob/main/samples/proactive-reliability/docs/screenshots/sre-agent/reporter.gif?raw=true)
 
-**[Detailed Instructions →](https://github.com/meetshamir/dotnetday#creating-deploymentreporter-sub-agent--reportertask-trigger)**
+**[Detailed Instructions →](https://github.com/microsoft/sre-agent/tree/main/samples/proactive-reliability#creating-deploymentreporter-sub-agent--reportertask-trigger)**
 
 ### Step 3: Run the Demo
 
@@ -149,7 +187,7 @@ DeploymentHealthCheck Agent Runs
        └── Posts to Teams channel
 ```
 
-**[Full Demo Instructions →](https://github.com/meetshamir/dotnetday#step-3-run-the-demo)**
+**[Full Demo Instructions →](https://github.com/microsoft/sre-agent/tree/main/samples/proactive-reliability#step-3-run-the-demo)**
 
 ## Demo Timeline
 
@@ -177,7 +215,7 @@ The setup script creates two versions:
 
 ## Get Started
 
-🔗 **Full source code and instructions**: [github.com/meetshamir/dotnetday](https://github.com/meetshamir/dotnetday)
+🔗 **Full source code and instructions**: [github.com/microsoft/sre-agent/samples/proactive-reliability](https://github.com/microsoft/sre-agent/tree/main/samples/proactive-reliability)
 
 🔗 **Azure SRE Agent documentation**: [https://learn.microsoft.com/en-us/azure/sre-agent/](https://learn.microsoft.com/en-us/azure/sre-agent/)
 
